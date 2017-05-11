@@ -31,28 +31,31 @@ typedef enum {
 @end
 
 @interface CubeView : UIView <UIScrollViewDelegate> {
-    UIScrollView *scrollView;
-    UIView *frontPane;
-    UIView *bottomPane;
-    UIView *topPane;
-    UIView *topEdgePane;
-    UIView *bottomEdgePane;
 
-    UIView *frontPaneShade;
-    UIView *bottomPaneShade;
-    UIView *topPaneShade;
-    UIView *topEdgePaneShade;
-    UIView *bottomEdgePaneShade;
-
-    NSUInteger currentPage;
-    CubeOrientation orientation;
-
-    id<CubeViewDelegate> delegate;
-
-    BOOL topEdgeExtended, bottomEdgeExtended; // Whether the current edge has been extended for a pull-to-refresh action
 }
 
+@property (nonatomic, strong) UIScrollView *scrollView;
+@property (nonatomic, strong) UIView *frontPane;
+@property (nonatomic, strong) UIView *bottomPane;
+@property (nonatomic, strong) UIView *topPane;
+@property (nonatomic, strong) UIView *topEdgePane;
+@property (nonatomic, strong) UIView *bottomEdgePane;
+
+@property (nonatomic, strong) UIView *frontPaneShade;
+@property (nonatomic, strong) UIView *bottomPaneShade;
+@property (nonatomic, strong) UIView *topPaneShade;
+@property (nonatomic, strong) UIView *topEdgePaneShade;
+@property (nonatomic, strong) UIView *bottomEdgePaneShade;
+
+@property (nonatomic) NSUInteger currentPage;
+@property (nonatomic) CubeOrientation orientation;
 @property (nonatomic) BOOL scrollEnabled;
+
+@property (nonatomic) BOOL topEdgeExtended;    //
+@property (nonatomic) BOOL bottomEdgeExtended; // Whether the current edge has been extended for a pull-to-refresh action
+
+@property (nonatomic, weak) id<CubeViewDelegate> delegate;
+
 
 - (id)initWithFrame:(CGRect)frame delegate:(id<CubeViewDelegate>)del orientation:(CubeOrientation)co initialPage:(NSInteger)initialPage;
 

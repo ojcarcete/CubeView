@@ -12,8 +12,6 @@
 
 @interface CubeView (Private)
 
-@property (nonatomic) NSUInteger initialPage;
-
 - (void)performInitialLayout;
 - (void)layoutPanes;
 - (void)setupContentSize;
@@ -47,8 +45,8 @@
 {
     self = [super initWithFrame:frame];
     if (self) {
-        delegate = del;
-        orientation = co;
+        self.delegate = del;
+        self.orientation = co;
         self.initialPage = 0;
         self.scrollEnabled = YES;
         [self performSelectorOnMainThread:@selector(performInitialLayout) withObject:nil waitUntilDone:NO];
@@ -59,19 +57,21 @@
 - (void)performInitialLayout
 {
     // Initialization code
-    scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
-    scrollView.delaysContentTouches = NO;
-    scrollView.scrollEnabled = self.scrollEnabled;
-    scrollView.delegate = self;
+    self.scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
+    self.scrollView.delaysContentTouches = NO;
+    self.scrollView.scrollEnabled = self.scrollEnabled;
+    self.scrollView.delegate = self;
     [self setupContentSize];
-    scrollView.pagingEnabled = YES;
-    scrollView.showsVerticalScrollIndicator = scrollView.showsHorizontalScrollIndicator = NO;
-    [self addSubview:scrollView];
-    frontPane = [[delegate viewForPage:0 cubeView:self] retain];
-    if ([delegate numPagesForCubeView:self] > 1) {
-        bottomPane = [[delegate viewForPage:1 cubeView:self] retain];
+    self.scrollView.pagingEnabled = YES;
+    self.scrollView.showsVerticalScrollIndicator = self.scrollView.showsHorizontalScrollIndicator = NO;
+    [self addSubview:self.scrollView];
+    self.frontPane = [self.delegate viewForPage:0 cubeView:self];
+
+    if ([self.delegate numPagesForCubeView:self] > 1) {
+        self.bottomPane = [self.delegate viewForPage:1 cubeView:self];
     }
-    scrollView.layer.contentsScale = [[UIScreen mainScreen] scale];
+
+    self.scrollView.layer.contentsScale = [[UIScreen mainScreen] scale];
     [self layoutPanes];
 
     [self setCurrentPage:self.initialPage];
@@ -80,47 +80,46 @@
 - (void)reload
 {
     [self setupContentSize];
-    [frontPane removeFromSuperview];
-    [topPane removeFromSuperview];
-    [bottomPane removeFromSuperview];
-    [frontPaneShade removeFromSuperview];
-    [topPaneShade removeFromSuperview];
-    [bottomPaneShade removeFromSuperview];
-    [frontPane release];
-    [bottomPane release], bottomPane = nil;
-    [topPane release], topPane = nil;
-    [frontPaneShade release], frontPaneShade = nil;
-    [bottomPaneShade release], bottomPaneShade = nil;
-    [topPaneShade release], topPaneShade = nil;
+    [self.frontPane removeFromSuperview];
+    [self.topPane removeFromSuperview];
+    [self.bottomPane removeFromSuperview];
+    [self.frontPaneShade removeFromSuperview];
+    [self.topPaneShade removeFromSuperview];
+    [self.bottomPaneShade removeFromSuperview];
+    self.bottomPane = nil;
+    self.topPane = nil;
+    self.frontPaneShade = nil;
+    self.bottomPaneShade = nil;
+    self.topPaneShade = nil;
 
-    frontPane = [[delegate viewForPage:currentPage cubeView:self] retain];
-    if (currentPage > 0) {
-        topPane = [[delegate viewForPage:currentPage-1 cubeView:self] retain];
+    self.frontPane = [self.delegate viewForPage:self.currentPage cubeView:self];
+    if (self.currentPage > 0) {
+        self.topPane = [self.delegate viewForPage:self.currentPage-1 cubeView:self];
     }
-    if (currentPage < [delegate numPagesForCubeView:self]-1) {
-        bottomPane = [[delegate viewForPage:currentPage+1 cubeView:self] retain];
+    if (self.currentPage < [self.delegate numPagesForCubeView:self]-1) {
+        self.bottomPane = [self.delegate viewForPage:self.currentPage+1 cubeView:self];
     }
 
-    [topEdgePane removeFromSuperview];
-    [topEdgePane release], topEdgePane = nil;
-    [bottomEdgePane removeFromSuperview];
-    [bottomEdgePane release], bottomEdgePane = nil;
+    [self.topEdgePane removeFromSuperview];
+    self.topEdgePane = nil;
+    [self.bottomEdgePane removeFromSuperview];
+    self.bottomEdgePane = nil;
     [self layoutPanes];
 }
 
 - (void)setupContentSize
 {
-    if (orientation == CubeOrientationVertical) {
-        if ([delegate numPagesForCubeView:self] > 2) {
-            scrollView.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height * 3);
+    if (self.orientation == CubeOrientationVertical) {
+        if ([self.delegate numPagesForCubeView:self] > 2) {
+            self.scrollView.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height * 3);
         } else {
-            scrollView.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height * 2);
+            self.scrollView.contentSize = CGSizeMake(self.bounds.size.width, self.bounds.size.height * 2);
         }
     } else {
-        if ([delegate numPagesForCubeView:self] > 2) {
-            scrollView.contentSize = CGSizeMake(self.bounds.size.width * 3, self.bounds.size.height);
+        if ([self.delegate numPagesForCubeView:self] > 2) {
+            self.scrollView.contentSize = CGSizeMake(self.bounds.size.width * 3, self.bounds.size.height);
         } else {
-            scrollView.contentSize = CGSizeMake(self.bounds.size.width * 2, self.bounds.size.height);
+            self.scrollView.contentSize = CGSizeMake(self.bounds.size.width * 2, self.bounds.size.height);
         }
     }
     
@@ -128,140 +127,137 @@
 
 - (void)layoutPanes
 {
-    NSUInteger max = [delegate numPagesForCubeView:self];
+    NSUInteger max = [self.delegate numPagesForCubeView:self];
     // only one of startX or startY will be used, based on orientation.
     CGFloat startX = 0.0, startY = 0.0;
 
-    if (orientation == CubeOrientationHorizontal) {
-        if (currentPage >= max-1) {
-            startX = scrollView.contentSize.width - scrollView.bounds.size.width;
-        } else if (currentPage > 0) {
-            startX = scrollView.bounds.size.width;
+    if (self.orientation == CubeOrientationHorizontal) {
+        if (self.currentPage >= max-1) {
+            startX = self.scrollView.contentSize.width - self.scrollView.bounds.size.width;
+        } else if (self.currentPage > 0) {
+            startX = self.scrollView.bounds.size.width;
         }
     } else {
-        if (currentPage >= max-1) {
-            startY =  scrollView.contentSize.height - scrollView.bounds.size.height;
-        } else if (currentPage > 0) {
-            startY = scrollView.bounds.size.height;
+        if (self.currentPage >= max-1) {
+            startY = self.scrollView.contentSize.height - self.scrollView.bounds.size.height;
+        } else if (self.currentPage > 0) {
+            startY = self.scrollView.bounds.size.height;
         }
     }
 
-    if (topPane) {
-        if (orientation == CubeOrientationHorizontal) {
-            topPane.layer.anchorPoint = CGPointMake(1.0, 0.5);
-            topPane.frame = CGRectMake(startX - topPane.bounds.size.width, 0.0, topPane.bounds.size.width, topPane.bounds.size.height);
+    if (self.topPane) {
+        if (self.orientation == CubeOrientationHorizontal) {
+            self.topPane.layer.anchorPoint = CGPointMake(1.0, 0.5);
+            self.topPane.frame = CGRectMake(startX - self.topPane.bounds.size.width, 0.0, self.topPane.bounds.size.width, self.topPane.bounds.size.height);
         } else {
-            topPane.layer.anchorPoint = CGPointMake(0.5, 1.0);
-            topPane.frame = CGRectMake(0.0, startY - topPane.bounds.size.height, topPane.bounds.size.width, topPane.bounds.size.height);
+            self.topPane.layer.anchorPoint = CGPointMake(0.5, 1.0);
+            self.topPane.frame = CGRectMake(0.0, startY - self.topPane.bounds.size.height, self.topPane.bounds.size.width, self.topPane.bounds.size.height);
         }
-        [scrollView addSubview:topPane];
-        if (!topPaneShade || !topPaneShade.superview) {
-            [topPaneShade release];
-            topPaneShade = [[UIView alloc] initWithFrame:topPane.bounds];
-            topPaneShade.backgroundColor = [UIColor blackColor];
-            [topPane addSubview:topPaneShade];
+        [self.scrollView addSubview:self.topPane];
+        if (!self.topPaneShade || !self.topPaneShade.superview) {
+            self.topPaneShade = [[UIView alloc] initWithFrame:self.topPane.bounds];
+            self.topPaneShade.backgroundColor = [UIColor blackColor];
+            [self.topPane addSubview:self.topPaneShade];
         }
     }
 
-    if (orientation == CubeOrientationHorizontal) {
-        frontPane.layer.anchorPoint = CGPointMake(1.0, 0.5);
-        frontPane.frame = CGRectMake(startX, 0.0, frontPane.bounds.size.width, frontPane.bounds.size.height);
+    if (self.orientation == CubeOrientationHorizontal) {
+        self.frontPane.layer.anchorPoint = CGPointMake(1.0, 0.5);
+        self.frontPane.frame = CGRectMake(startX, 0.0, self.frontPane.bounds.size.width, self.frontPane.bounds.size.height);
     } else {
-        frontPane.layer.anchorPoint = CGPointMake(0.5, 1.0);
-        frontPane.frame = CGRectMake(0.0, startY, frontPane.bounds.size.width, frontPane.bounds.size.height);
+        self.frontPane.layer.anchorPoint = CGPointMake(0.5, 1.0);
+        self.frontPane.frame = CGRectMake(0.0, startY, self.frontPane.bounds.size.width, self.frontPane.bounds.size.height);
     }
-    [scrollView addSubview:frontPane];
+    [self.scrollView addSubview:self.frontPane];
 
-    if (bottomPane) {
-        if (orientation == CubeOrientationHorizontal) {
-            bottomPane.layer.anchorPoint = CGPointMake(0.0, 0.5);
-            bottomPane.frame = CGRectMake(startX + bottomPane.bounds.size.width, 0.0, bottomPane.bounds.size.width, bottomPane.bounds.size.height);
+    if (self.bottomPane) {
+        if (self.orientation == CubeOrientationHorizontal) {
+            self.bottomPane.layer.anchorPoint = CGPointMake(0.0, 0.5);
+            self.bottomPane.frame = CGRectMake(startX + self.bottomPane.bounds.size.width, 0.0, self.bottomPane.bounds.size.width, self.bottomPane.bounds.size.height);
         } else {
-            bottomPane.layer.anchorPoint = CGPointMake(0.5, 0.0);
-            bottomPane.frame = CGRectMake(0.0, startY + bottomPane.bounds.size.height, bottomPane.bounds.size.width, bottomPane.bounds.size.height);
+            self.bottomPane.layer.anchorPoint = CGPointMake(0.5, 0.0);
+            self.bottomPane.frame = CGRectMake(0.0, startY + self.bottomPane.bounds.size.height, self.bottomPane.bounds.size.width, self.bottomPane.bounds.size.height);
         }
-        [scrollView addSubview:bottomPane];
-        if (!bottomPaneShade || !bottomPaneShade.superview) {
-            [bottomPaneShade release];
-            bottomPaneShade = [[UIView alloc] initWithFrame:bottomPane.bounds];
-            bottomPaneShade.backgroundColor = [UIColor blackColor];
-            [bottomPane addSubview:bottomPaneShade];
+        [self.scrollView addSubview:self.bottomPane];
+        if (!self.bottomPaneShade || !self.bottomPaneShade.superview) {
+            self.bottomPaneShade = [[UIView alloc] initWithFrame:self.bottomPane.bounds];
+            self.bottomPaneShade.backgroundColor = [UIColor blackColor];
+            [self.bottomPane addSubview:self.bottomPaneShade];
         }
     }
 
-    if (!frontPaneShade || !frontPaneShade.superview) {
-        [frontPaneShade release];
-        frontPaneShade = [[UIView alloc] initWithFrame:frontPane.bounds];
-        frontPaneShade.backgroundColor = [UIColor blackColor];
+    if (!self.frontPaneShade || !self.frontPaneShade.superview) {
+        self.frontPaneShade = [[UIView alloc] initWithFrame:self.frontPane.bounds];
+        self.frontPaneShade.backgroundColor = [UIColor blackColor];
     }
 
-    if (currentPage == 0 && !topEdgePane && [delegate respondsToSelector:@selector(topEdgePaneForCubeView:)]) {
-        topEdgePane = [[delegate topEdgePaneForCubeView:self] retain];
-        if (orientation == CubeOrientationHorizontal) {
-            topEdgePane.layer.anchorPoint = CGPointMake(1.0, 0.5);
-            topEdgePane.frame = CGRectMake(-topEdgePane.bounds.size.width, 0, topEdgePane.bounds.size.width, topEdgePane.bounds.size.height);
+    if (self.currentPage == 0 && !self.topEdgePane && [self.delegate respondsToSelector:@selector(topEdgePaneForCubeView:)]) {
+        self.topEdgePane = [self.delegate topEdgePaneForCubeView:self];
+        if (self.orientation == CubeOrientationHorizontal) {
+            self.topEdgePane.layer.anchorPoint = CGPointMake(1.0, 0.5);
+            self.topEdgePane.frame = CGRectMake(-self.topEdgePane.bounds.size.width, 0, self.topEdgePane.bounds.size.width, self.topEdgePane.bounds.size.height);
         } else {
-            topEdgePane.layer.anchorPoint = CGPointMake(0.5, 1.0);
-            topEdgePane.frame = CGRectMake(0, -topEdgePane.bounds.size.height, topEdgePane.bounds.size.width, topEdgePane.bounds.size.height);
+            self.topEdgePane.layer.anchorPoint = CGPointMake(0.5, 1.0);
+            self.topEdgePane.frame = CGRectMake(0, -self.topEdgePane.bounds.size.height, self.topEdgePane.bounds.size.width, self.topEdgePane.bounds.size.height);
         }
-        [scrollView addSubview:topEdgePane];
-    } else if (currentPage == max-1 && !bottomEdgePane && [delegate respondsToSelector:@selector(bottomEdgePaneForCubeView:)]) {
-        bottomEdgePane = [[delegate bottomEdgePaneForCubeView:self] retain];
-        if (orientation == CubeOrientationHorizontal) {
-            bottomEdgePane.layer.anchorPoint = CGPointMake(0.0, 0.5);
-            bottomEdgePane.frame = CGRectMake(scrollView.contentSize.width, 0, bottomEdgePane.bounds.size.width, bottomEdgePane.bounds.size.height);
+        [self.scrollView addSubview:self.topEdgePane];
+    } else if (self.currentPage == max-1 && !self.bottomEdgePane && [self.delegate respondsToSelector:@selector(bottomEdgePaneForCubeView:)]) {
+        self.bottomEdgePane = [self.delegate bottomEdgePaneForCubeView:self];
+        if (self.orientation == CubeOrientationHorizontal) {
+            self.bottomEdgePane.layer.anchorPoint = CGPointMake(0.0, 0.5);
+            self.bottomEdgePane.frame = CGRectMake(self.scrollView.contentSize.width, 0, self.bottomEdgePane.bounds.size.width, self.bottomEdgePane.bounds.size.height);
         } else {
-            bottomEdgePane.layer.anchorPoint = CGPointMake(0.5, 0.0);
-            bottomEdgePane.frame = CGRectMake(0, scrollView.contentSize.height, bottomEdgePane.bounds.size.width, bottomEdgePane.bounds.size.height);
+            self.bottomEdgePane.layer.anchorPoint = CGPointMake(0.5, 0.0);
+            self.bottomEdgePane.frame = CGRectMake(0, self.scrollView.contentSize.height, self.bottomEdgePane.bounds.size.width, self.bottomEdgePane.bounds.size.height);
         }
-        [scrollView addSubview:bottomEdgePane];
+        [self.scrollView addSubview:self.bottomEdgePane];
     }
 
-    scrollView.contentOffset = CGPointMake(startX, startY);
+    self.scrollView.contentOffset = CGPointMake(startX, startY);
 }
 
 - (void)setTopEdgePaneHidden:(BOOL)hidden
 {
-    topEdgePane.hidden = hidden;
+    self.topEdgePane.hidden = hidden;
 }
 
 - (void)setCurrentPage:(NSUInteger)page
 {
-    currentPage = page;
+    _currentPage = page;
     [self reload];
 }
 
 - (void)scrollCubeViewToPreviousPage
 {
-    if (currentPage <= 0)
+    if (self.currentPage <= 0)
     {
         return;
     }
 
     CGPoint previousContentPageOffset = CGPointZero;
 
-    [scrollView setContentOffset:previousContentPageOffset animated:YES];
+    [self.scrollView setContentOffset:previousContentPageOffset animated:YES];
 }
 
 - (void)scrollCubeViewToNextPage
 {
-    if (currentPage >= ([delegate numPagesForCubeView:self] - 1))
+    if (self.currentPage >= ([self.delegate numPagesForCubeView:self] - 1))
     {
         return;
     }
 
     CGPoint nextPageContentOffset = CGPointZero;
 
-    if (orientation == CubeOrientationHorizontal)
+    if (self.orientation == CubeOrientationHorizontal)
     {
-        nextPageContentOffset = CGPointMake(scrollView.bounds.size.width, 0);
+        nextPageContentOffset = CGPointMake(self.scrollView.bounds.size.width, 0);
     }
-    else if (orientation == CubeOrientationVertical)
+    else if (self.orientation == CubeOrientationVertical)
     {
-        nextPageContentOffset = CGPointMake(0, scrollView.bounds.size.height);
+        nextPageContentOffset = CGPointMake(0, self.scrollView.bounds.size.height);
     }
 
-    [scrollView setContentOffset:nextPageContentOffset animated:YES];
+    [self.scrollView setContentOffset:nextPageContentOffset animated:YES];
 }
 
 - (void)setAnchorPoint:(CGPoint)anchorPoint forView:(UIView *)view
@@ -290,7 +286,7 @@
 {
     _scrollEnabled = scrollEnabled;
 
-    scrollView.scrollEnabled = _scrollEnabled;
+    self.scrollView.scrollEnabled = _scrollEnabled;
 }
 
 #pragma mark - ScrollViewDelegate methods
@@ -304,15 +300,15 @@
 
 - (void)scrollViewDidScroll:(UIScrollView *)sv
 {
-    if (orientation == CubeOrientationHorizontal) {
+    if (self.orientation == CubeOrientationHorizontal) {
         CALayer *layer;
         CATransform3D xRotationTransform;
 
         CGFloat frontPaneOffset = 0;
-        if (currentPage == 0) {
+        if (self.currentPage == 0) {
             frontPaneOffset = 0;
         } else {
-            if (currentPage >= [delegate numPagesForCubeView:self]-1) {
+            if (self.currentPage >= [self.delegate numPagesForCubeView:self]-1) {
                 frontPaneOffset = sv.contentSize.width - sv.bounds.size.width;
             } else {
                 frontPaneOffset = sv.bounds.size.width;
@@ -321,16 +317,16 @@
         
         // Set up appropriate anchors for front pane.
         // n.b. Changing the anchorPoint will move the view, so save and restore the frame.
-        if (frontPaneOffset - sv.contentOffset.x > 0 && frontPane.layer.anchorPoint.x != 0.0) {
-            [self setAnchorPoint:CGPointMake(0.0, 0.5) forView:frontPane];
-        } else if (frontPaneOffset - sv.contentOffset.x < 0 && frontPane.layer.anchorPoint.x != 1.0) {
-            [self setAnchorPoint:CGPointMake(1.0, 0.5) forView:frontPane];
+        if (frontPaneOffset - sv.contentOffset.x > 0 && self.frontPane.layer.anchorPoint.x != 0.0) {
+            [self setAnchorPoint:CGPointMake(0.0, 0.5) forView:self.frontPane];
+        } else if (frontPaneOffset - sv.contentOffset.x < 0 && self.frontPane.layer.anchorPoint.x != 1.0) {
+            [self setAnchorPoint:CGPointMake(1.0, 0.5) forView:self.frontPane];
         }
         
         // Top panel rotation
-        if (topPane != nil) {
+        if (self.topPane != nil) {
             CGFloat topAngle = (((sv.contentOffset.x - (frontPaneOffset - sv.bounds.size.width))/sv.bounds.size.width) * 90.0);
-            layer = topPane.layer;
+            layer = self.topPane.layer;
             xRotationTransform = sv.layer.transform;
             xRotationTransform.m34 = 1.0 / -500;
             xRotationTransform = CATransform3DRotate(xRotationTransform, topAngle * M_PI / 180.0f, 0.0f, -1.0f, 0.0f);
@@ -340,16 +336,16 @@
         // Scrolling down
         // Front panel rotation
         CGFloat frontAngle = -(((sv.bounds.size.width-(sv.contentOffset.x - frontPaneOffset))/sv.bounds.size.width) * 90.0) + 90.0;
-        layer = frontPane.layer;
+        layer = self.frontPane.layer;
         xRotationTransform = sv.layer.transform;
         xRotationTransform.m34 = 1.0 / -500;
         xRotationTransform = CATransform3DRotate(xRotationTransform, frontAngle * M_PI / 180.0f, 0.0f, -1.0f, 0.0f);
         layer.transform = xRotationTransform;
         
         // Bottom panel rotation
-        if (bottomPane != nil) {
+        if (self.bottomPane != nil) {
             CGFloat bottomAngle = -(((sv.bounds.size.width-(sv.contentOffset.x - frontPaneOffset))/sv.bounds.size.width) * 90.0);
-            layer = bottomPane.layer;
+            layer = self.bottomPane.layer;
             xRotationTransform = sv.layer.transform;
             xRotationTransform.m34 = 1.0 / -500;
             xRotationTransform = CATransform3DRotate(xRotationTransform, bottomAngle * M_PI / 180.0f, 0.0f, -1.0f, 0.0f);
@@ -357,16 +353,16 @@
         }
 
         // Edges
-        if (topEdgePane != nil) {
+        if (self.topEdgePane != nil) {
             CGFloat edgeAngle = 180.0-(((sv.bounds.size.width-(sv.contentOffset.x - frontPaneOffset))/sv.bounds.size.width) * 90.0);
-            layer = topEdgePane.layer;
+            layer = self.topEdgePane.layer;
             xRotationTransform = sv.layer.transform;
             xRotationTransform.m34 = 1.0 / -500;
             xRotationTransform = CATransform3DRotate(xRotationTransform, edgeAngle * M_PI / 180.0f, 0.0f, -1.0f, 0.0f);
             layer.transform = xRotationTransform;
-        } else if (bottomEdgePane != nil) {
+        } else if (self.bottomEdgePane != nil) {
             CGFloat edgeAngle = -(((sv.bounds.size.width-(sv.contentOffset.x - frontPaneOffset))/sv.bounds.size.width) * 90.0);
-            layer = bottomEdgePane.layer;
+            layer = self.bottomEdgePane.layer;
             xRotationTransform = sv.layer.transform;
             xRotationTransform.m34 = 1.0 / -500;
             xRotationTransform = CATransform3DRotate(xRotationTransform, edgeAngle * M_PI / 180.0f, 0.0f, -1.0f, 0.0f);
@@ -374,21 +370,21 @@
         }
 
         // Adjust shading
-        if (!frontPaneShade.superview) {
-            [frontPaneShade removeFromSuperview];
-            [frontPane addSubview:frontPaneShade];
+        if (!self.frontPaneShade.superview) {
+            [self.frontPaneShade removeFromSuperview];
+            [self.frontPane addSubview:self.frontPaneShade];
         }
-        bottomPaneShade.alpha = (bottomPane.frame.origin.x - sv.contentOffset.x)/sv.bounds.size.width;
-        topPaneShade.alpha = (sv.contentOffset.x - (frontPaneOffset - sv.bounds.size.height))/sv.bounds.size.width;
-        frontPaneShade.alpha = ABS(sv.contentOffset.x - frontPaneOffset)/sv.bounds.size.width;
+        self.bottomPaneShade.alpha = (self.bottomPane.frame.origin.x - sv.contentOffset.x)/sv.bounds.size.width;
+        self.topPaneShade.alpha = (sv.contentOffset.x - (frontPaneOffset - sv.bounds.size.height))/sv.bounds.size.width;
+        self.frontPaneShade.alpha = ABS(sv.contentOffset.x - frontPaneOffset)/sv.bounds.size.width;
     } else { // Vertically-oriented rotation
         CALayer *layer;
         CATransform3D yRotationTransform;
         
         CGFloat frontPaneOffset = 0;
-        if (currentPage == 0) {
+        if (self.currentPage == 0) {
             frontPaneOffset = 0;
-        } else if (currentPage >= [delegate numPagesForCubeView:self]-1) {
+        } else if (self.currentPage >= [self.delegate numPagesForCubeView:self]-1) {
             frontPaneOffset = sv.contentSize.height - sv.bounds.size.height;
         } else {
             frontPaneOffset = sv.bounds.size.height;
@@ -396,16 +392,16 @@
         
         // Set up appropriate anchors for front pane.
         // n.b. Changing the anchorPoint will move the view, so save and restore the frame.
-        if (frontPaneOffset - sv.contentOffset.y > 0 && frontPane.layer.anchorPoint.y != 0.0) {
-            [self setAnchorPoint:CGPointMake(0.5, 0.0) forView:frontPane];
-        } else if (frontPaneOffset - sv.contentOffset.y < 0 && frontPane.layer.anchorPoint.y != 1.0) {
-            [self setAnchorPoint:CGPointMake(0.5, 1.0) forView:frontPane];
+        if (frontPaneOffset - sv.contentOffset.y > 0 && self.frontPane.layer.anchorPoint.y != 0.0) {
+            [self setAnchorPoint:CGPointMake(0.5, 0.0) forView:self.frontPane];
+        } else if (frontPaneOffset - sv.contentOffset.y < 0 && self.frontPane.layer.anchorPoint.y != 1.0) {
+            [self setAnchorPoint:CGPointMake(0.5, 1.0) forView:self.frontPane];
         }
         
         // Top panel rotation
-        if (topPane != nil) {
+        if (self.topPane != nil) {
             CGFloat topAngle = (((sv.contentOffset.y - (frontPaneOffset - sv.bounds.size.height))/sv.bounds.size.height) * 90.0);
-            layer = topPane.layer;
+            layer = self.topPane.layer;
             yRotationTransform = sv.layer.transform;
             yRotationTransform.m34 = 1.0 / -500;
             yRotationTransform = CATransform3DRotate(yRotationTransform, topAngle * M_PI / 180.0f, 1.0f, 0.0f, 0.0f);
@@ -415,16 +411,16 @@
         // Scrolling down
         // Front panel rotation
         CGFloat frontAngle = -(((sv.bounds.size.height-(sv.contentOffset.y - frontPaneOffset))/sv.bounds.size.height) * 90.0) + 90.0;
-        layer = frontPane.layer;
+        layer = self.frontPane.layer;
         yRotationTransform = sv.layer.transform;
         yRotationTransform.m34 = 1.0 / -500;
         yRotationTransform = CATransform3DRotate(yRotationTransform, frontAngle * M_PI / 180.0f, 1.0f, 0.0f, 0.0f);
         layer.transform = yRotationTransform;
 
         // Bottom panel rotation
-        if (bottomPane != nil) {
+        if (self.bottomPane != nil) {
             CGFloat bottomAngle = -(((sv.bounds.size.height-(sv.contentOffset.y - frontPaneOffset))/sv.bounds.size.height) * 90.0);
-            layer = bottomPane.layer;
+            layer = self.bottomPane.layer;
             yRotationTransform = sv.layer.transform;
             yRotationTransform.m34 = 1.0 / -500;
             yRotationTransform = CATransform3DRotate(yRotationTransform, bottomAngle * M_PI / 180.0f, 1.0f, 0.0f, 0.0f);
@@ -432,18 +428,18 @@
         }
 
         // Edges
-        if (topEdgePane != nil) {
-            layer = topEdgePane.layer;
+        if (self.topEdgePane != nil) {
+            layer = self.topEdgePane.layer;
             // Check pull-action threshold and unfold the view if we're past it.
-            if ([delegate respondsToSelector:@selector(supportsPullActionTop:)] && [delegate supportsPullActionTop:self] && sv.contentOffset.y < -kPullActionThreshold) {
-                if (!topEdgeExtended) {
+            if ([self.delegate respondsToSelector:@selector(supportsPullActionTop:)] && [self.delegate supportsPullActionTop:self] && sv.contentOffset.y < -kPullActionThreshold) {
+                if (!self.topEdgeExtended) {
                     [UIView animateWithDuration:0.2 animations:^(void) {
                         layer.transform = sv.layer.transform;
                     }];
-                    topEdgeExtended = YES;
+                    self.topEdgeExtended = YES;
                 }
             } else {
-                if (topEdgeExtended) {
+                if (self.topEdgeExtended) {
                     [UIView beginAnimations:nil context:NULL];
                     [UIView setAnimationDuration:0.2];
                 }
@@ -452,24 +448,24 @@
                 yRotationTransform.m34 = 1.0 / -500;
                 yRotationTransform = CATransform3DRotate(yRotationTransform, edgeAngle * M_PI / 180.0f, 1.0f, 0.0f, 0.0f);
                 layer.transform = yRotationTransform;
-                if (topEdgeExtended) {
+                if (self.topEdgeExtended) {
                     [UIView commitAnimations];
-                    topEdgeExtended = NO;
+                    self.topEdgeExtended = NO;
                 }
             }
-        } else if (bottomEdgePane != nil) {
-            layer = bottomEdgePane.layer;
+        } else if (self.bottomEdgePane != nil) {
+            layer = self.bottomEdgePane.layer;
             // Check pull-action threshold and unfold the view if we're past it.
-            if ([delegate respondsToSelector:@selector(supportsPullActionTop:)] && [delegate supportsPullActionTop:self] &&
+            if ([self.delegate respondsToSelector:@selector(supportsPullActionTop:)] && [self.delegate supportsPullActionTop:self] &&
                 sv.contentOffset.y > (sv.contentSize.height - sv.bounds.size.height + kPullActionThreshold)) {
-                if (!bottomEdgeExtended) {
+                if (!self.bottomEdgeExtended) {
                     [UIView animateWithDuration:0.2 animations:^(void) {
                         layer.transform = sv.layer.transform;
                     }];
-                    bottomEdgeExtended = YES;
+                    self.bottomEdgeExtended = YES;
                 }
             } else {
-                if (bottomEdgeExtended) {
+                if (self.bottomEdgeExtended) {
                     [UIView beginAnimations:nil context:NULL];
                     [UIView setAnimationDuration:0.2];
                 }
@@ -478,9 +474,9 @@
                 yRotationTransform.m34 = 1.0 / -500;
                 yRotationTransform = CATransform3DRotate(yRotationTransform, edgeAngle * M_PI / 180.0f, 1.0f, 0.0f, 0.0f);
                 layer.transform = yRotationTransform;
-                if (bottomEdgeExtended) {
+                if (self.bottomEdgeExtended) {
                     [UIView commitAnimations];
-                    bottomEdgeExtended = NO;
+                    self.bottomEdgeExtended = NO;
                 }
             }
         }
@@ -488,30 +484,30 @@
         
         
         // Adjust shading
-        if (!frontPaneShade.superview) {
-            [frontPaneShade removeFromSuperview];
-            [frontPane addSubview:frontPaneShade];
+        if (!self.frontPaneShade.superview) {
+            [self.frontPaneShade removeFromSuperview];
+            [self.frontPane addSubview:self.frontPaneShade];
         }
-        bottomPaneShade.alpha = (bottomPane.frame.origin.y - sv.contentOffset.y)/sv.bounds.size.height;
-        topPaneShade.alpha = (sv.contentOffset.y - (frontPaneOffset - sv.bounds.size.height))/sv.bounds.size.height;
-        frontPaneShade.alpha = ABS(sv.contentOffset.y - frontPaneOffset)/sv.bounds.size.height;
+        self.bottomPaneShade.alpha = (self.bottomPane.frame.origin.y - sv.contentOffset.y)/sv.bounds.size.height;
+        self.topPaneShade.alpha = (sv.contentOffset.y - (frontPaneOffset - sv.bounds.size.height))/sv.bounds.size.height;
+        self.frontPaneShade.alpha = ABS(sv.contentOffset.y - frontPaneOffset)/sv.bounds.size.height;
     }
 
     // Check for page crossovers
-    NSUInteger max = [delegate numPagesForCubeView:self];
+    NSUInteger max = [self.delegate numPagesForCubeView:self];
     // Up a page
-    if ((orientation == CubeOrientationVertical && ((scrollView.contentOffset.y <= 0.0 && currentPage > 0) ||
-                                                     (scrollView.contentOffset.y <= scrollView.bounds.size.height && currentPage == max-1 && max > 2))) ||
-        (orientation == CubeOrientationHorizontal && ((scrollView.contentOffset.x <= 0.0 && currentPage > 0) ||
-                                                       (scrollView.contentOffset.x <= scrollView.bounds.size.width && currentPage == max-1 && max > 2))))
+    if ((self.orientation == CubeOrientationVertical && ((self.scrollView.contentOffset.y <= 0.0 && self.currentPage > 0) ||
+                                                     (self.scrollView.contentOffset.y <= self.scrollView.bounds.size.height && self.self.currentPage == max-1 && max > 2))) ||
+        (self.orientation == CubeOrientationHorizontal && ((self.scrollView.contentOffset.x <= 0.0 && self.currentPage > 0) ||
+                                                       (self.scrollView.contentOffset.x <= self.scrollView.bounds.size.width && self.currentPage == max-1 && max > 2))))
     {
         [self pageUp];
     } 
     // Down a page
-    else if ((orientation == CubeOrientationVertical && ((scrollView.contentOffset.y >= scrollView.bounds.size.height*2) ||
-                                                          (scrollView.contentOffset.y >= scrollView.bounds.size.height && currentPage == 0))) ||
-             (orientation == CubeOrientationHorizontal && ((scrollView.contentOffset.x >= scrollView.bounds.size.width*2) ||
-                                                            (scrollView.contentOffset.x >= scrollView.bounds.size.width && currentPage == 0))))
+    else if ((self.orientation == CubeOrientationVertical && ((self.scrollView.contentOffset.y >= self.scrollView.bounds.size.height*2) ||
+                                                          (self.scrollView.contentOffset.y >= self.scrollView.bounds.size.height && self.currentPage == 0))) ||
+             (self.orientation == CubeOrientationHorizontal && ((self.scrollView.contentOffset.x >= self.scrollView.bounds.size.width*2) ||
+                                                            (self.scrollView.contentOffset.x >= self.scrollView.bounds.size.width && self.currentPage == 0))))
     {
         [self pageDown];
     }
@@ -520,35 +516,33 @@
 - (void)resetTransforms
 {
     // Weird.  But resetting the transforms after a successful scroll seems to fix a lot of quirky geometry issues.
-    frontPane.layer.transform = scrollView.layer.transform;
-    topPane.layer.transform = scrollView.layer.transform;
-    bottomPane.layer.transform = scrollView.layer.transform;
+    self.frontPane.layer.transform = self.scrollView.layer.transform;
+    self.topPane.layer.transform = self.scrollView.layer.transform;
+    self.bottomPane.layer.transform = self.scrollView.layer.transform;
 }
 
 - (void)pageUp
 {
     // Get out of the way of touch interactions
-    [frontPaneShade removeFromSuperview];
+    [self.frontPaneShade removeFromSuperview];
     
-    [frontPane removeFromSuperview];
-    [topPane removeFromSuperview];
-    [bottomPane removeFromSuperview];
-    [frontPaneShade removeFromSuperview];
-    [topPaneShade removeFromSuperview];
-    [bottomPaneShade removeFromSuperview];
-    [bottomEdgePane removeFromSuperview];
-    [bottomEdgePane release], bottomEdgePane = nil;
+    [self.frontPane removeFromSuperview];
+    [self.topPane removeFromSuperview];
+    [self.bottomPane removeFromSuperview];
+    [self.frontPaneShade removeFromSuperview];
+    [self.topPaneShade removeFromSuperview];
+    [self.bottomPaneShade removeFromSuperview];
+    [self.bottomEdgePane removeFromSuperview];
+    self.bottomEdgePane = nil;
     
-    currentPage--;
-    [bottomPane release];
-    bottomPane = [frontPane retain];
-    [frontPane release];
-    frontPane = [topPane retain];
-    [topPane release];
-    if (currentPage > 0) {
-        topPane = [[delegate viewForPage:currentPage-1 cubeView:self] retain];
+    _currentPage--;
+    self.bottomPane = self.frontPane;
+    self.frontPane = self.topPane;
+
+    if (self.currentPage > 0) {
+        self.topPane = [self.delegate viewForPage:self.currentPage-1 cubeView:self];
     } else {
-        topPane = nil;
+        self.topPane = nil;
     }
     [self layoutPanes];
 
@@ -557,30 +551,28 @@
 
 - (void)pageDown
 {
-    NSUInteger max = [delegate numPagesForCubeView:self];
+    NSUInteger max = [self.delegate numPagesForCubeView:self];
 
     // Get out of the way of touch interactions
-    [frontPaneShade removeFromSuperview];
+    [self.frontPaneShade removeFromSuperview];
     
-    if (currentPage < max-1) {
-        [frontPane removeFromSuperview];
-        [topPane removeFromSuperview];
-        [bottomPane removeFromSuperview];
-        [frontPaneShade removeFromSuperview];
-        [topPaneShade removeFromSuperview];
-        [bottomPaneShade removeFromSuperview];
-        [topEdgePane removeFromSuperview];
-        [topEdgePane release], topEdgePane = nil;
+    if (self.currentPage < max-1) {
+        [self.frontPane removeFromSuperview];
+        [self.topPane removeFromSuperview];
+        [self.bottomPane removeFromSuperview];
+        [self.frontPaneShade removeFromSuperview];
+        [self.topPaneShade removeFromSuperview];
+        [self.bottomPaneShade removeFromSuperview];
+        [self.topEdgePane removeFromSuperview];
+        self.topEdgePane = nil;
         
-        currentPage++;
-        [topPane release];
-        topPane = [frontPane retain];
-        [frontPane release];
-        frontPane = [bottomPane retain];
-        if (currentPage < max-1) {
-            bottomPane = [[delegate viewForPage:currentPage+1 cubeView:self] retain];
+        _currentPage++;
+        self.topPane = self.frontPane;
+        self.frontPane = self.bottomPane;
+        if (self.currentPage < max-1) {
+            self.bottomPane = [self.delegate viewForPage:self.currentPage+1 cubeView:self];
         } else {
-            bottomPane = nil;
+            self.bottomPane = nil;
         }
         [self layoutPanes];
     }
@@ -590,9 +582,9 @@
 
 - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate
 {
-    if (topEdgeExtended) {
-        topEdgeExtended = NO;
-        [delegate pullTopActionTriggered:self topActionFrame:[topEdgePane convertRect:topEdgePane.frame toView:self.superview]];
+    if (self.topEdgeExtended) {
+        self.topEdgeExtended = NO;
+        [self.delegate pullTopActionTriggered:self topActionFrame:[self.topEdgePane convertRect:self.topEdgePane.frame toView:self.superview]];
     }
 }
 
@@ -612,27 +604,27 @@
 {
     CGPoint currentPageContentOffset = [self getCurrentPageContentOffset];
 
-    return CGPointEqualToPoint(scrollView.contentOffset, currentPageContentOffset);
+    return CGPointEqualToPoint(self.scrollView.contentOffset, currentPageContentOffset);
 }
 
 - (void)adjustContentOffsetForCurrentPage
 {
     CGPoint currentPageContentOffset = [self getCurrentPageContentOffset];
 
-    [scrollView setContentOffset:currentPageContentOffset animated:YES];
+    [self.scrollView setContentOffset:currentPageContentOffset animated:YES];
 }
 
 - (CGPoint)getCurrentPageContentOffset
 {
     CGPoint currentPageContentOffset = CGPointZero;
 
-    if (orientation == CubeOrientationHorizontal)
+    if (self.orientation == CubeOrientationHorizontal)
     {
-        currentPageContentOffset = CGPointMake(currentPage * scrollView.bounds.size.width, 0);
+        currentPageContentOffset = CGPointMake(self.currentPage * self.scrollView.bounds.size.width, 0);
     }
-    else if (orientation == CubeOrientationVertical)
+    else if (self.orientation == CubeOrientationVertical)
     {
-        currentPageContentOffset = CGPointMake(0, currentPage * scrollView.bounds.size.height);
+        currentPageContentOffset = CGPointMake(0, self.currentPage * self.scrollView.bounds.size.height);
     }
 
     return currentPageContentOffset;
