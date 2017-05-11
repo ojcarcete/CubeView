@@ -555,7 +555,44 @@
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
-    [self resetTransforms];
+    if ([self isOnCurrentPageOffset])
+    {
+        [self resetTransforms];
+    }
+    else
+    {
+        [self adjustContentOffsetForCurrentPage];
+    }
+}
+
+- (BOOL)isOnCurrentPageOffset
+{
+    CGPoint currentPageContentOffset = [self getCurrentPageContentOffset];
+
+    return CGPointEqualToPoint(scrollView.contentOffset, currentPageContentOffset);
+}
+
+- (void)adjustContentOffsetForCurrentPage
+{
+    CGPoint currentPageContentOffset = [self getCurrentPageContentOffset];
+
+    [scrollView setContentOffset:currentPageContentOffset animated:YES];
+}
+
+- (CGPoint)getCurrentPageContentOffset
+{
+    CGPoint currentPageContentOffset = CGPointZero;
+
+    if (orientation == CubeOrientationHorizontal)
+    {
+        currentPageContentOffset = CGPointMake(currentPage * scrollView.bounds.size.width, 0);
+    }
+    else if (orientation == CubeOrientationVertical)
+    {
+        currentPageContentOffset = CGPointMake(0, currentPage * scrollView.bounds.size.height);
+    }
+
+    return currentPageContentOffset;
 }
 
 @end
