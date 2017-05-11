@@ -12,6 +12,8 @@
 
 @interface CubeView (Private)
 
+@property (nonatomic) NSUInteger initialPage;
+
 - (void)performInitialLayout;
 - (void)layoutPanes;
 - (void)setupContentSize;
@@ -19,9 +21,27 @@
 
 @end
 
+@interface CubeView ()
+
+@property (nonatomic) NSUInteger initialPage;
+
+@end
+
 @implementation CubeView
 
 #pragma mark - Lifecycle
+
+- (id)initWithFrame:(CGRect)frame delegate:(id<CubeViewDelegate>)del orientation:(CubeOrientation)co initialPage:(NSInteger)initialPage
+{
+    self = [self initWithFrame:frame delegate:del orientation:co];
+
+    if (self)
+    {
+        self.initialPage = initialPage;
+    }
+
+    return self;
+}
 
 - (id)initWithFrame:(CGRect)frame delegate:(id<CubeViewDelegate>)del orientation:(CubeOrientation)co
 {
@@ -29,6 +49,7 @@
     if (self) {
         delegate = del;
         orientation = co;
+        self.initialPage = 0;
         [self performSelectorOnMainThread:@selector(performInitialLayout) withObject:nil waitUntilDone:NO];
     }
     return self;
@@ -49,6 +70,8 @@
     }
     scrollView.layer.contentsScale = [[UIScreen mainScreen] scale];
     [self layoutPanes];
+
+    [self setCurrentPage:self.initialPage];
 }
 
 - (void)reload
