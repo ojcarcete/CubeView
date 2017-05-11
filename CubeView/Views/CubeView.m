@@ -50,6 +50,7 @@
         delegate = del;
         orientation = co;
         self.initialPage = 0;
+        self.scrollEnabled = YES;
         [self performSelectorOnMainThread:@selector(performInitialLayout) withObject:nil waitUntilDone:NO];
     }
     return self;
@@ -60,6 +61,7 @@
     // Initialization code
     scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
     scrollView.delaysContentTouches = NO;
+    scrollView.scrollEnabled = self.scrollEnabled;
     scrollView.delegate = self;
     [self setupContentSize];
     scrollView.pagingEnabled = YES;
@@ -282,6 +284,14 @@
     view.layer.anchorPoint = anchorPoint;
 }
 
+#pragma mark - Scroll Configuration
+
+- (void)setScrollEnabled:(BOOL)scrollEnabled
+{
+    _scrollEnabled = scrollEnabled;
+
+    scrollView.scrollEnabled = _scrollEnabled;
+}
 
 #pragma mark - ScrollViewDelegate methods
 

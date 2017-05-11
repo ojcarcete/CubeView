@@ -52,6 +52,8 @@ typedef enum {
     BOOL topEdgeExtended, bottomEdgeExtended; // Whether the current edge has been extended for a pull-to-refresh action
 }
 
+@property (nonatomic) BOOL scrollEnabled;
+
 - (id)initWithFrame:(CGRect)frame delegate:(id<CubeViewDelegate>)del orientation:(CubeOrientation)co initialPage:(NSInteger)initialPage;
 
 - (id)initWithFrame:(CGRect)frame delegate:(id<CubeViewDelegate>)del orientation:(CubeOrientation)co;
