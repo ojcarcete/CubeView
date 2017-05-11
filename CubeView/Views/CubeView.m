@@ -59,6 +59,7 @@
 {
     // Initialization code
     scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
+    scrollView.delaysContentTouches = NO;
     scrollView.delegate = self;
     [self setupContentSize];
     scrollView.pagingEnabled = YES;
