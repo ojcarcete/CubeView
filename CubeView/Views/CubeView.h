@@ -60,6 +60,10 @@ typedef enum {
 
 - (void)setCurrentPage:(NSUInteger)page;
 
+- (void)scrollCubeViewToPreviousPage;
+
+- (void)scrollCubeViewToNextPage;
+
 - (void)reload;
 
 @end

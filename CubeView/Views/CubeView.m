@@ -229,6 +229,39 @@
     [self reload];
 }
 
+- (void)scrollCubeViewToPreviousPage
+{
+    if (currentPage <= 0)
+    {
+        return;
+    }
+
+    CGPoint previousContentPageOffset = CGPointZero;
+
+    [scrollView setContentOffset:previousContentPageOffset animated:YES];
+}
+
+- (void)scrollCubeViewToNextPage
+{
+    if (currentPage >= ([delegate numPagesForCubeView:self] - 1))
+    {
+        return;
+    }
+
+    CGPoint nextPageContentOffset = CGPointZero;
+
+    if (orientation == CubeOrientationHorizontal)
+    {
+        nextPageContentOffset = CGPointMake(scrollView.bounds.size.width, 0);
+    }
+    else if (orientation == CubeOrientationVertical)
+    {
+        nextPageContentOffset = CGPointMake(0, scrollView.bounds.size.height);
+    }
+
+    [scrollView setContentOffset:nextPageContentOffset animated:YES];
+}
+
 - (void)setAnchorPoint:(CGPoint)anchorPoint forView:(UIView *)view
 {
     CGPoint newPoint = CGPointMake(view.bounds.size.width * anchorPoint.x, view.bounds.size.height * anchorPoint.y);
